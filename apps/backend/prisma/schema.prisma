@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+
+
+
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("MEMBER")
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile info
+  weight        Float?
+  height        Float?
+  goal          String?   // weight loss, muscle gain, etc.
+
+  // Relations
+  membership    Membership?
+  attendance    Attendance[]
+  workoutPlans  WorkoutPlan[] @relation("MemberWorkoutPlans")
+  assignedWorkouts WorkoutPlan[] @relation("TrainerWorkoutPlans")
+  dietPlans     DietPlan[]    @relation("MemberDietPlans")
+  assignedDiets DietPlan[]    @relation("TrainerDietPlans")
+  notifications Notification[]
+}
+
+model MembershipPlan {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  price       Float
+  durationDays Int
+  memberships Membership[]
+}
+
+model Membership {
+  id          String           @id @default(uuid())
+  userId      String           @unique
+  user        User             @relation(fields: [userId], references: [id])
+  planId      String
+  plan        MembershipPlan   @relation(fields: [planId], references: [id])
+  startDate   DateTime         @default(now())
+  endDate     DateTime
+  status      String           @default("ACTIVE")
+  payments    Payment[]
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  membershipId  String
+  membership    Membership    @relation(fields: [membershipId], references: [id])
+  amount        Float
+  status        String        @default("PENDING")
+  transactionId String?       @unique
+  createdAt     DateTime      @default(now())
+}
+
+model Attendance {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  date        DateTime @default(now())
+  checkInTime DateTime @default(now())
+  checkOutTime DateTime?
+}
+
+model WorkoutPlan {
+  id          String   @id @default(uuid())
+  trainerId   String
+  trainer     User     @relation("TrainerWorkoutPlans", fields: [trainerId], references: [id])
+  memberId    String
+  member      User     @relation("MemberWorkoutPlans", fields: [memberId], references: [id])
+  title       String
+  description String?
+  exercises   String    // List of exercises as JSON string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DietPlan {
+  id          String   @id @default(uuid())
+  trainerId   String
+  trainer     User     @relation("TrainerDietPlans", fields: [trainerId], references: [id])
+  memberId    String
+  member      User     @relation("MemberDietPlans", fields: [memberId], references: [id])
+  title       String
+  description String?
+  meals       String    // List of meals as JSON string
+  totalCalories Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
